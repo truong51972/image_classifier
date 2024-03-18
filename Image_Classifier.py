@@ -102,17 +102,9 @@ class Image_Classifier_Model:
         def _change_brightness(img, brightness_range, num_of_results= 5):
             results = []
             for i in range(num_of_results):
-                channel_shift_range = 0.5
-                channel_b, channel_g, channel_r = cv2.split(img)
-                channel_b = channel_b.astype(np.float32)
-                channel_g = channel_g.astype(np.float32)
-                channel_r = channel_r.astype(np.float32)
-                channel_b += np.random.uniform(-channel_shift_range, channel_shift_range) * 255
-                channel_g += np.random.uniform(-channel_shift_range, channel_shift_range) * 255
-                channel_r += np.random.uniform(-channel_shift_range, channel_shift_range) * 255
-                img = cv2.merge([channel_b, channel_g, channel_r])
-                img = np.clip(img, 0, 255).astype(np.uint8)
-                results.append(img)
+                alpha = np.random.uniform(brightness_range[0], brightness_range[1])
+                brightened_image = cv2.convertScaleAbs(img, alpha=alpha, beta=0)
+                results.append(brightened_image)
             return results
             
         def _zoom(img, zoom_range=5, num_of_results= 5):
