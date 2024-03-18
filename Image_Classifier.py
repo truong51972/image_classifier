@@ -23,11 +23,14 @@ from imblearn.over_sampling import RandomOverSampler
 from imblearn.under_sampling import RandomUnderSampler
 
 class Image_Classifier_Model:
-    def convolve_img(self, array, filters: int= 32, kernel_size: np.array=(5,5), size: tuple= (32, 32), padding: str= 'same', activation='relu', seend: int= 51972):
+    def __init__(self) -> None:
+        self.input_size_convolve_img = (32, 32)
+        
+    def convolve_img(self, array, filters: int= 32, kernel_size: np.array=(5,5), padding: str= 'same', activation='relu', seend: int= 51972):
         np.random.seed(seend)
         convolved_array = []
     
-        if isinstance(array, np.ndarray) and array.shape == (size[0], size[0], 3):
+        if isinstance(array, np.ndarray) and array.shape == (self.input_size_convolve_img[0], self.input_size_convolve_img[1], 3):
             array = cv2.split(array)
             
         for layer in array:
@@ -70,11 +73,11 @@ class Image_Classifier_Model:
 
         return flattened_array
     
-    def extract_feature(self, img, size: tuple= (32, 32)):
-        img = cv2.resize(img, size)
+    def extract_feature(self, img):
+        img = cv2.resize(img, self.input_size_convolve_img)
         img = img.astype('float32') / 255.0
         
-        convolved_array_1 = self.convolve_img(img, filters= 16, size= size)
+        convolved_array_1 = self.convolve_img(img, filters= 16)
         pooled_array_1 = self.max_pooling_img(convolved_array_1)
         dropout_array_1 = self.dropout(pooled_array_1, index= 'even')
         
@@ -171,25 +174,28 @@ class Image_Classifier_Model:
         return chunks
     
     def load_data(self, path):
-        return pd.read_csv(path)
+        train_df, test_df, self.classes, self.class_name_to_int, self.int_to_class_name, self.input_size_convolve_img = load(path)
+        return train_df, test_df
     
-    def save_data(self, df, path):
-        df.to_csv(path, index= 0)
+    def save_data(self,train_df, test_df, path):
+        dump_file = [train_df, test_df, self.classes, self.class_name_to_int, self.int_to_class_name, self.input_size_convolve_img]
+        dump(dump_file, path)
     
     def get_class(self, path):
         self.classes = os.listdir(path)
         self.class_name_to_int = dict(zip(self.classes, range(len(self.classes))))
         self.int_to_class_name = dict(zip(range(len(self.classes)), self.classes))
 
-    def save_model(self, output_folder: str = './runs'):
+    def save_model(self, model_name: str = 'classifier', output_folder: str = './runs'):
         self.create_result_file(output_folder)
 
-        dump_file = [self.model, self.classes, self.class_name_to_int, self.int_to_class_name]
+        dump_file = [self.model, self.classes, self.class_name_to_int, self.int_to_class_name, self.input_size_convolve_img]
         self.ax.figure.savefig(f'{self.folder_name}/Confusion matrix.png')
-        dump(dump_file,f'{self.folder_name}/classifier.model')
+        print(f'Save in "{self.folder_name}/{model_name}.model"')
+        dump(dump_file,f'{self.folder_name}/{model_name}.model')
 
     def load_model(self, path):
-        self.model, self.classes, self.class_name_to_int, self.int_to_class_name = load(path)
+        self.model, self.classes, self.class_name_to_int, self.int_to_class_name, self.input_size_convolve_img = load(path)
         print('Done!')
 
     def create_result_file(self, output_folder):
@@ -244,10 +250,11 @@ class Image_Classifier_Model:
         data = list([img_1, num_class_1], [img_2, num_class_2], ...)
         return df
         '''
+        self.input_size_convolve_img = size
         data_for_df = []
         for i in tqdm(range(len(data)), desc="Progress"):
             img, class_num = data[i]
-            feature = self.extract_feature(img, size)
+            feature = self.extract_feature(img)
             
             row = feature.copy()
             row.append(class_num)
