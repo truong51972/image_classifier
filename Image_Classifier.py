@@ -23,11 +23,11 @@ from imblearn.over_sampling import RandomOverSampler
 from imblearn.under_sampling import RandomUnderSampler
 
 class Image_Classifier_Model:
-    def convolve_img(self, array, filters: int= 32, kernel_size: np.array=(5,5), padding: str= 'same', activation='relu', seend: int= 51972):
+    def convolve_img(self, array, filters: int= 32, kernel_size: np.array=(5,5), size: tuple= (32, 32), padding: str= 'same', activation='relu', seend: int= 51972):
         np.random.seed(seend)
         convolved_array = []
     
-        if isinstance(array, np.ndarray) and array.shape == (32, 32, 3):
+        if isinstance(array, np.ndarray) and array.shape == (size[0], size[0], 3):
             array = cv2.split(array)
             
         for layer in array:
@@ -70,11 +70,11 @@ class Image_Classifier_Model:
 
         return flattened_array
     
-    def extract_feature(self, img):
-        img = cv2.resize(img, (32, 32))
+    def extract_feature(self, img, size: tuple= (32, 32)):
+        img = cv2.resize(img, size)
         img = img.astype('float32') / 255.0
         
-        convolved_array_1 = self.convolve_img(img, filters= 16)
+        convolved_array_1 = self.convolve_img(img, filters= 16, size= size)
         pooled_array_1 = self.max_pooling_img(convolved_array_1)
         dropout_array_1 = self.dropout(pooled_array_1, index= 'even')
         
@@ -239,7 +239,7 @@ class Image_Classifier_Model:
         print(f'{len_before} ===> {len_after}')
         return results
      
-    def convert_imgData_to_featureData(self, data: list) -> pd.DataFrame:
+    def convert_imgData_to_featureData(self, data: list, size: tuple= (32, 32)) -> pd.DataFrame:
         '''
         data = list([img_1, num_class_1], [img_2, num_class_2], ...)
         return df
@@ -247,7 +247,7 @@ class Image_Classifier_Model:
         data_for_df = []
         for i in tqdm(range(len(data)), desc="Progress"):
             img, class_num = data[i]
-            feature = self.extract_feature(img)
+            feature = self.extract_feature(img, size)
             
             row = feature.copy()
             row.append(class_num)
